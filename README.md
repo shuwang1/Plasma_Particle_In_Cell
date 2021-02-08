@@ -1,4 +1,4 @@
-# Particle-Simulation using the GPU via the OpenGL Compute-Shader
+#Particle-In-Cell Plasma Simulation using the OpenGL Compute-Shader
 
 This particle simulation is more like a proof of concept for myself or others, to show and understand how compute shaders in OpenGL work.
 Using the knowledge I gathered from this project, more complex, fascinating and fast projects are possible, which use the power of

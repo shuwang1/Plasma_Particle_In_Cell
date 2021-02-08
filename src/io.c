@@ -553,25 +553,86 @@ int initAndStartIO (char *title, int width, int height)
     G_Height = height;
     /*G_WindowTitle = malloc(sizeof(title)*sizeof(char));*/
     G_WindowTitle = title;
+
+    if ( !glfwInit() ) return 0;
+
+    if (G_Window) glfwDestroyWindow(G_Window);
+
+    glfwDefaultWindowHints();
+
     G_FullScreen = 0;
+    if (G_FullScreen)
+        G_Window = glfwCreateWindow(1920, 1080, G_WindowTitle, glfwGetPrimaryMonitor(), NULL);
+    else
+        G_Window = glfwCreateWindow(G_Width, G_Height, G_WindowTitle, NULL, NULL);
 
-    if (!glfwInit())
+    if (G_Window) {
+        glfwMakeContextCurrent(G_Window);
+        glfwGetFramebufferSize(G_Window, &G_Width, &G_Height);
+    } else {
         return 0;
+    }
 
-    if (createWindow())
+//    if (createWindow())
     {
         GLenum err = glewInit();
-        if (err != GLEW_OK)
-        {
+        if (err != GLEW_OK) {
+
           /* Problem: glewInit failed, something is seriously wrong. */
           printf("Error: %s\n", glewGetErrorString(err));
           glfwDestroyWindow(G_Window);
           exit(1);
+
         }
-        printf("Status: Using GLEW %s\n", glewGetString(GLEW_VERSION));
-        /* Hintergrund und so werden initialisiert (Farben) */
-        if (initScene ())
-        {
+
+	printf("Status: Using GLEW %s\n", glewGetString(GLEW_VERSION));
+
+    	glEnable (GL_DEPTH_TEST);
+        glCullFace (GL_BACK);
+        glEnable (GL_CULL_FACE);
+        glEnable (GL_NORMALIZE);
+        glEnable (GL_LIGHTING);
+
+    /* Farbe der zweiten Lichtquelle */
+    CGPoint4f lightColor1[3] =
+    { {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f,
+                                                           1.0f}
+    };
+
+    /* Farbe der ersten Lichtquelle */
+    CGPoint4f lightColor2[3] =
+    { {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f,
+                                                           1.0f}
+    };
+
+    /* Oeffnungswinkel der zweiten Lichtquelle */
+    GLdouble lightCutoff1 = 90.0f;
+    /* Lichtverteilung im Lichtkegel der zweiten Lichtquelle */
+    GLdouble lightExponent1 = 20.0f;
+
+    float globalAmbientLight[] = {0.3, 0.3, 0.3, 1.0};
+
+    glLightModelfv(GL_LIGHT_MODEL_AMBIENT, globalAmbientLight);
+
+    /* Farbe der zweiten Lichtquelle setzen */
+    glLightfv (GL_LIGHT1, GL_AMBIENT, lightColor1[0]);
+    glLightfv (GL_LIGHT1, GL_DIFFUSE, lightColor1[1]);
+    glLightfv (GL_LIGHT1, GL_SPECULAR, lightColor1[2]);
+
+    /* Spotlight-Eigenschaften der zweiten Lichtquelle setzen */
+    glLightf (GL_LIGHT1, GL_SPOT_CUTOFF, lightCutoff1);
+    glLightf (GL_LIGHT1, GL_SPOT_EXPONENT, lightExponent1);
+
+    /* Farbe der zweiten Lichtquelle setzen */
+    glLightfv (GL_LIGHT2, GL_AMBIENT, lightColor2[0]);
+    glLightfv (GL_LIGHT2, GL_DIFFUSE, lightColor2[1]);
+    glLightfv (GL_LIGHT2, GL_SPECULAR, lightColor2[2]);
+
+    /* Spotlight-Eigenschaften der zweiten Lichtquelle setzen */
+    glLightf (GL_LIGHT2, GL_SPOT_CUTOFF, lightCutoff1);
+    glLightf (GL_LIGHT2, GL_SPOT_EXPONENT, lightExponent1);
+
+	{
             int i;
             printf ("--> Shader laden...\n"); fflush(stdout);
 
@@ -580,14 +641,19 @@ int initAndStartIO (char *title, int width, int height)
 
             printf ("--> Shader sind geladen.\n"); fflush(stdout);
 
-            registerCallBacks (G_Window);
+//            registerCallBacks (G_Window);
+
+    glfwSetFramebufferSizeCallback (window, cbReshape);
+    glfwSetKeyCallback (window, cbKeyboard);
+    glfwSetCursorPosCallback (window, cbMouseMotion);
+    glfwSetMouseButtonCallback (window, cbMouseButton);
 
             glGenBuffers(1, &G_ObjectsBuffer);
             glBindBuffer(GL_ARRAY_BUFFER, G_ObjectsBuffer);
             glBufferData(GL_ARRAY_BUFFER, sizeof(G_Objects), G_Objects, GL_STATIC_DRAW);
             glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-            /* Physik-Simulation! ==================================================*/
+            /* Plasma Simulation ==================================================*/
 
             /* Position */
             G_ComputePositions = calloc(PARTICLE_COUNT, sizeof(Vec3));
@@ -645,15 +711,32 @@ int initAndStartIO (char *title, int width, int height)
             printf ("--> Initialisierung angeschlossen.\n"); fflush(stdout);
 
             /* Die Endlosschleife wird angestoßen */
-            mainLoop (G_Window);
+
+//            mainLoop (G_Window);
+//    double lastCallTime = cbTimer(0.0);
+
+    G_Interval = glfwGetTime();
+    glfwSetTime( 8.0 );
+
+    G_FPS_Count++;
+    G_FPS_All += G_Interval;
+
+    calcTimeRelatedStuff(G_Interval);
+    lastCallTime = G_Interval;
+
+    glfwSetInputMode( G_Window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+
+    while( !glfwWindowShouldClose( G_Window) )
+    {
+        cbDisplay ( G_Window);
+        lastCallTime = cbTimer (lastCallTime);
+        glfwPollEvents();
+    }
 
 
-        } else {
-            glfwDestroyWindow(G_Window);
-            return 0;
+
         }
-    } else {
-        return 0;
+
     }
 
     glDeleteBuffers(1, &G_Position_buffer);

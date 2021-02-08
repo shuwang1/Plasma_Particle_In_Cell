@@ -1,7 +1,10 @@
 /**
  * @file
- * ein erster Versuch, eine eigene Datei zu erstellen...
- * @author Maurice Tollmien.
+ * Code calculates the motions of electron 
+ *   under the Poisson-Maxwell equation 
+ *     using the Particle-In-Cell (PIC) method
+ *
+ * @author Shu Wang, shu@stargazingtech.org 
  */
 
 /* ---- System Header einbinden ---- */
@@ -34,18 +37,19 @@ static void error_callback(int error, const char* description)
  * @return Rueckgabewert im Fehlerfall ungleich Null.
  */
 int
-main (int argc, char **argv)
-{
+main (int argc, char **argv){
+
 	srand (time (0));
 	
 	glfwSetErrorCallback(error_callback);
 
 	
-	if (!initAndStartIO ("lots and lots of particles ... yeay ... :-)", 1920, 1080))
-	{
+	if ( !initAndStartIO ("lots and lots of particles ... yeay ... :-)", 1920, 1080) ){
+
 		fprintf (stderr, "Initialisierung fehlgeschlagen!\n");
 		glfwTerminate();
 		return 1;
+
 	} 
 	
 	glfwTerminate();
