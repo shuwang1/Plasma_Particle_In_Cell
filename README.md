@@ -1,6 +1,9 @@
 #Particle-In-Cell Plasma Simulation using the OpenGL Compute-Shader
 
-This particle simulation is more like a proof of concept for myself or others, to show and understand how compute shaders in OpenGL work.
+This physical, particles and plasma simulations are a collection of simulations progressively showing how two electron beams passing 
+through each other in opposite directions are simulated with OpenGL Compute Shader. The final plasmas simulation shows an interesting 
+phenomenon occurs, called the Two-Stream Instability.
+
 Using the knowledge I gathered from this project, more complex, fascinating and fast projects are possible, which use the power of
 the graphics hardware for computations.
 

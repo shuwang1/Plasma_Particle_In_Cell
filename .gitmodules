@@ -1,0 +1,3 @@
+[submodule "pic-python"]
+	path = pic-python
+	url = https://github.com/pmocz/pic-python.git
