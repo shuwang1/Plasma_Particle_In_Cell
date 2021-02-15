@@ -1,0 +1,81 @@
+#version 430 core
+
+#define GAUSS		10000.0
+#define E		2.71828183
+#define K_WEAK		1.0	
+#define K_V		1.5
+
+//Uniform block containing postions and masses of the attractor 
+layout (binding = 2) buffer AttractorBuffer {
+	vec4 attractors[]; // xyz = position, w = mass
+};
+
+// Process particles in blocks of 128
+layout (local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
+
+layout (std430, binding = 0) buffer PositionBuffer {
+	vec4 positions[];
+};
+
+layout (std430, binding = 1) buffer VelocityBuffer {
+	vec4 velocities[];
+};
+
+// Delta time
+uniform float dt;
+
+highp float rand(vec2 co)
+{
+    highp float a = 12.9898;
+    highp float b = 78.233;
+    highp float c = 43758.5453;
+    highp float dt= dot(co.xy ,vec2(a,b));
+    highp float sn= mod(dt,3.14);
+    return fract(sin(sn) * c);
+}
+
+vec3 calcForceFor (vec3 forcePoint, vec3 pos)
+{
+	// Force:
+	float gauss = 10000.0;
+	float e = 2.71828183;
+	float k_weak = 1.0;
+	vec3 dir = forcePoint - pos.xyz;
+	float g = pow(e, -dot(dir, dir) / gauss );
+	vec3 f = normalize(dir) * k_weak * (1+ mod(rand(dir.xy), 10) - mod(rand(dir.yz), 10)) / 10.0 * g;
+	return f;
+}
+
+void main(void)
+{
+  uint idx = gl_GlobalInvocationID.x;
+  float dt1 = dt * 100.0;
+
+  // Read the current position and velocity from the buffers
+  vec4 vel = velocities[idx], pos = positions[idx];
+
+  vec3 masscenter = vec3(0);
+  for(int ii=0; ii<32; ii++) {
+    masscenter += attractors[ii].xyz * attractors[ii].w;
+  }	
+  vec3 dir = masscenter - pos.xyz;
+
+  vec3 f = normalize(dir) * K_WEAK * (1+ mod(rand(dir.xy), 10) - mod(rand(dir.yz), 10)) / 10.0 * pow( E, -dot(dir, dir) / GAUSS ) + rand( pos.xz )/100.0;
+//vec3 f = calcForceFor( masscenter, pos.xyz ) + rand(pos.xz)/100.0;
+
+
+  // Velocity: Eine leichte Anziehung richtung Schwerpunkt...
+  vel.xyz = normalize(vel.xyz + (f * dt1)) * K_V + dir * 0.00005;
+  pos += vec4(vel.xyz * dt1, -0.0001f*dt1);
+
+  // If the particle expires, reset it
+  if (pos.w <= 0) {
+    pos  = vec4(-pos.xyz + rand( pos.xy )*20.0 - rand( pos.yz )*20.0, 1.0f);
+    //vel.xyz *= 0.01f;
+  }
+
+  // Store the new position and velocity back into the buffers
+  positions[idx] = pos;	
+  velocities[idx] = vel;
+
+}

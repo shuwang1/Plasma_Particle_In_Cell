@@ -51,7 +51,7 @@ static const struct
     GLuint num_groups_z;
 } G_Dispatch_params = {16, 16, 1};
 
-Vec3 * G_ComputePositions;
+Vec4 * G_ComputePositions;
 Vec4 * G_ComputeVelocities;
 Vec4 * G_ComputeAttractors;
 float * G_ComputeAttractorMass;
@@ -634,12 +634,13 @@ int initAndStartIO (char *title, int width, int height)
 
 	{
             int i;
-            printf ("--> Shader laden...\n"); fflush(stdout);
+            printf ("--> Loading shaders ...\n"); fflush(stdout);
 
             G_ShaderColor = loadShaders("colorVertexShader.vert", "colorFragmentShader.frag");
             G_ComputeShader = loadComputeShader("particlesComputeShader.comp");
+            //G_ComputeShader = loadComputeShader("physicalComputeShader.comp");
 
-            printf ("--> Shader sind geladen.\n"); fflush(stdout);
+            printf ("--> Done loading shaders.\n"); fflush(stdout);
 
 //            registerCallBacks (G_Window);
 
@@ -656,39 +657,34 @@ int initAndStartIO (char *title, int width, int height)
             /* Plasma Simulation ==================================================*/
 
             /* Position */
-            G_ComputePositions = calloc(PARTICLE_COUNT, sizeof(Vec3));
-            for (i = 0; i < PARTICLE_COUNT; i++) {
-                Vec3 vec;
+            G_ComputePositions = calloc(PARTICLE_COUNT, sizeof(Vec4));
+            G_ComputeVelocities = calloc(PARTICLE_COUNT, sizeof(Vec4));
+            G_ComputeLife = calloc(PARTICLE_COUNT, sizeof(float));
+            for (i = 0; i < PARTICLE_COUNT; i++) 
+	    {
+                Vec4 vec;
                 vec.x = (rand() % 2000) / (500.0);
                 vec.y = (rand() % 2000) / (500.0);
                 vec.z = (rand() % 2000) / (500.0);
+		vec.w = rand() / (double)RAND_MAX;
+
                 G_ComputePositions[i] = vec;
-            }
+                G_ComputeLife[i] = vec.w;
 
-            glGenBuffers    (1, &G_Position_buffer);
-            glBindBuffer    (GL_ARRAY_BUFFER, G_Position_buffer);
-            glBufferData    (GL_ARRAY_BUFFER, PARTICLE_COUNT * sizeof(Vec3), G_ComputePositions, GL_DYNAMIC_COPY);
-
-            /* Lebensdauer */
-            G_ComputeLife = calloc(PARTICLE_COUNT, sizeof(float));
-            for (i = 0; i < PARTICLE_COUNT; i++) {
-                G_ComputeLife[i] = rand() / (double)RAND_MAX;
-            }
-
-            glGenBuffers    (1, &G_Life_buffer);
-            glBindBuffer    (GL_ARRAY_BUFFER, G_Life_buffer);
-            glBufferData    (GL_ARRAY_BUFFER, PARTICLE_COUNT * sizeof(float), G_ComputeLife, GL_DYNAMIC_COPY);
-
-            /* Geschwindigkeit */
-            G_ComputeVelocities = calloc(PARTICLE_COUNT, sizeof(Vec4));
-            for (i = 0; i < PARTICLE_COUNT; i++) {
-                Vec4 vec;
                 vec.x = (rand() % 100) / 500.0 - (rand() % 100) / 500.0;
                 vec.y = (rand() % 100) / 500.0 - (rand() % 100) / 500.0;
                 vec.z = (rand() % 100) / 500.0 - (rand() % 100) / 500.0;
                 vec.w =  0.0;
                 G_ComputeVelocities[i] = vec;
             }
+
+            glGenBuffers    (1, &G_Position_buffer);
+            glBindBuffer    (GL_ARRAY_BUFFER, G_Position_buffer);
+            glBufferData    (GL_ARRAY_BUFFER, PARTICLE_COUNT * sizeof(Vec4), G_ComputePositions, GL_DYNAMIC_COPY);
+
+	    glGenBuffers    (1, &G_Life_buffer);
+            glBindBuffer    (GL_ARRAY_BUFFER, G_Life_buffer);
+            glBufferData    (GL_ARRAY_BUFFER, PARTICLE_COUNT * sizeof(float), G_ComputeLife, GL_DYNAMIC_COPY);
 
             glGenBuffers    (1, &G_Velocity_buffer);
             glBindBuffer    (GL_ARRAY_BUFFER, G_Velocity_buffer);
@@ -701,7 +697,7 @@ int initAndStartIO (char *title, int width, int height)
                 vec.x = (rand() % 500) / 30.0 - (rand() % 500) / 30.0;
                 vec.y = (rand() % 500) / 30.0 - (rand() % 500) / 30.0;
                 vec.z = (rand() % 500) / 30.0 - (rand() % 500) / 30.0;
-                vec.w = 0;
+                vec.w = 1;
                 G_ComputeAttractors[i] = vec;
             }
             glGenBuffers(1, &G_Attractor_buffer);

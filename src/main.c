@@ -44,9 +44,9 @@ main (int argc, char **argv){
 	glfwSetErrorCallback(error_callback);
 
 	
-	if ( !initAndStartIO ("lots and lots of particles ... yeay ... :-)", 1920, 1080) ){
+	if ( !initAndStartIO ("Physical, Partical and Plasma Simulations", 1920, 1080) ){
 
-		fprintf (stderr, "Initialisierung fehlgeschlagen!\n");
+		fprintf (stderr, "Initialization failed!\n");
 		glfwTerminate();
 		return 1;
 

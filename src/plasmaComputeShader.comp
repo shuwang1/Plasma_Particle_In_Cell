@@ -14,17 +14,13 @@ layout (binding = 2) buffer AttractorBuffer {
 layout (local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
 
 layout (std430, binding = 0) buffer PositionBuffer {
-	vec3 positions[];
+	vec4 positions[];
 };
 
 layout (std430, binding = 1) buffer VelocityBuffer {
 	vec4 velocities[];
 };
 
-
-layout (std430, binding = 3) buffer LifeBuffer {
-	float lifes[];
-};
 
 // Delta time
 uniform float dt;
@@ -54,14 +50,26 @@ vec3 normalize (vec3 v)
   return v / sqrt( vecNorm2(v) );
 }
 
+vec3 calcForceFor (vec3 forcePoint, vec3 pos)
+{
+	// Force:
+	float gauss = 10000.0;
+	float e = 2.71828183;
+	float k_weak = 1.0;
+	vec3 dir = forcePoint - pos.xyz;
+	float g = pow (e, -pow(vecLen(dir), 2) / gauss);
+	vec3 f = normalize(dir) * k_weak * (1+ mod(rand(dir.xy), 10) - mod(rand(dir.yz), 10)) / 10.0 * g;
+	return f;
+}
+
 void main(void)
 {
   uint idx = gl_GlobalInvocationID.x;
 
   // Read the current position and velocity from the buffers
   vec4 vel = velocities[idx];
-  vec3 pos = positions[idx];
-  float w1 = lifes[idx];
+  vec3 pos = positions[idx].xyz;
+  float w1 = positions[idx].w;
 
   float dt1 = dt * 100.0;
 	
@@ -71,25 +79,25 @@ void main(void)
   }	
   vec3 dir = masscenter - pos;
 
-  vec3 f = normalize(dir) * K_WEAK * (1+ mod(rand(dir.xy), 10) - mod(rand(dir.yz), 10)) / 10.0 * pow( E, - vecNorm2( dir ) / GAUSS ) + rand( pos.xz )/100.0;
+// vec3 f = normalize(dir) * K_WEAK * (1+ mod(rand(dir.xy), 10) - mod(rand(dir.yz), 10)) / 10.0 * pow( E, - vecNorm2( dir ) / GAUSS ) + rand( pos.xz )/100.0;
+  vec3 f = calcForceFor( masscenter, pos ) + rand(pos.xz)/100.0;
+
 
   // Velocity: Eine leichte Anziehung richtung Schwerpunkt...
   vec3 vel1 = normalize(vel.xyz + (f * dt1)) * K_V + dir * 0.00005;
-	
-  // Pos:
   vec3 pos1 = pos + vel1 * dt1;
-
   w1 -= 0.0001f * dt1;
+
+
   // If the particle expires, reset it
   if (w1 <= 0) {
     pos1  = -pos1 + rand( pos1.xy )*20.0 - rand( pos1.yz )*20.0;
     vel1.xyz *= 0.01f;
     w1 = 1.0f;
   }
-  lifes[idx] = w1;
 
   // Store the new position and velocity back into the buffers
-  positions[idx] = pos1;	
+  positions[idx] = vec4( pos1, w1 );	
   velocities[idx] = vec4( vel1, vel.w );
 
 }
