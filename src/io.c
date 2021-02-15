@@ -643,10 +643,10 @@ int initAndStartIO (char *title, int width, int height)
 
 //            registerCallBacks (G_Window);
 
-    glfwSetFramebufferSizeCallback (window, cbReshape);
-    glfwSetKeyCallback (window, cbKeyboard);
-    glfwSetCursorPosCallback (window, cbMouseMotion);
-    glfwSetMouseButtonCallback (window, cbMouseButton);
+    glfwSetFramebufferSizeCallback ( G_Window, cbReshape);
+    glfwSetKeyCallback ( G_Window, cbKeyboard);
+    glfwSetCursorPosCallback ( G_Window, cbMouseMotion);
+    glfwSetMouseButtonCallback ( G_Window, cbMouseButton);
 
             glGenBuffers(1, &G_ObjectsBuffer);
             glBindBuffer(GL_ARRAY_BUFFER, G_ObjectsBuffer);
@@ -722,12 +722,17 @@ int initAndStartIO (char *title, int width, int height)
     G_FPS_All += G_Interval;
 
     calcTimeRelatedStuff(G_Interval);
-    lastCallTime = G_Interval;
+
+    double lastCallTime = G_Interval;
 
     glfwSetInputMode( G_Window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 
     while( !glfwWindowShouldClose( G_Window) )
     {
+
+
+
+
         cbDisplay ( G_Window);
         lastCallTime = cbTimer (lastCallTime);
         glfwPollEvents();
